@@ -30,6 +30,9 @@ const projects = defineCollection({
       // contain: 로고처럼 잘리면 안 되는 이미지 / cover: 사진처럼 칸을 채우는 이미지
       coverFit: z.enum(['contain', 'cover']).default('contain'),
       repo: z.string().url().optional(),
+      // 소개·시연 영상. public/ 아래 경로 (예: /videos/이름.mp4). videoPoster 는 재생 전 표시할 그림.
+      video: z.string().optional(),
+      videoPoster: z.string().optional(),
       // 카드에 보이는 대표 역할·기능. 2개를 넘으면 +n 으로 접힌다.
       highlights: z.array(z.string()).default([]),
       // 5개를 넘으면 +n 으로 접힌다.
@@ -42,6 +45,13 @@ const projects = defineCollection({
           items: z.array(z.string()).default([]),
         })
         .default({ items: [] }),
+      // 상세 페이지의 프로젝트 성과 칸 (팀 전체 성과 등). items 가 비어 있으면 칸이 나오지 않는다.
+      outcomes: z
+        .object({
+          title: z.string().default('프로젝트 성과'),
+          items: z.array(z.string()).default([]),
+        })
+        .default({ title: '프로젝트 성과', items: [] }),
       // 상세 페이지의 "내가 한 일". 한 일 → 한 이유 → 결과 및 성과 순서로 보인다.
       // 각 칸은 문장 하나 또는 목록(여러 줄)으로 쓸 수 있다.
       works: z
@@ -50,6 +60,9 @@ const projects = defineCollection({
             title: z.string(),
             // 예: Trouble Shooting. 적으면 제목 옆에 태그로 붙는다.
             tag: z.string().optional(),
+            // 카드 아래에 붙는 사진 (없어도 됨). imageCaption 은 사진 설명.
+            image: image().optional(),
+            imageCaption: z.string().optional(),
             did: textBlock,
             why: textBlock,
             result: textBlock,

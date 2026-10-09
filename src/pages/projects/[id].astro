@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 
@@ -8,7 +9,7 @@ export async function getStaticPaths() {
 }
 
 const { project } = Astro.props;
-const { title, summary, period, duration, team, role, category, color, repo, stack, duties, works } = project.data;
+const { title, summary, period, duration, team, role, category, color, repo, video, videoPoster, stack, duties, outcomes, works } = project.data;
 const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
 ---
 
@@ -35,6 +36,15 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
         )
       }
     </div>
+
+    {
+      video && (
+        <section class="reveal">
+          <div class="section-head"><h2>소개 영상</h2></div>
+          <video class="project-video reveal-body" controls preload="metadata" poster={videoPoster} src={video} />
+        </section>
+      )
+    }
 
     <section class="reveal">
       <div class="section-head"><h2>담당 역할</h2></div>
@@ -87,6 +97,12 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
                     </li>
                   ))}
                 </ol>
+                {work.image && (
+                  <figure class="work-figure">
+                    <Image src={work.image} alt={work.imageCaption ?? work.title} width={1200} />
+                    {work.imageCaption && <figcaption>{work.imageCaption}</figcaption>}
+                  </figure>
+                )}
               </article>
             ))}
           </div>
@@ -95,6 +111,21 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
         )
       }
     </section>
+
+    {
+      outcomes.items.length > 0 && (
+        <section class="reveal">
+          <div class="section-head"><h2>{outcomes.title}</h2></div>
+          <div class="duties reveal-body">
+            <ul class="lines">
+              {outcomes.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )
+    }
 
     {
       stack.length > 0 && (
