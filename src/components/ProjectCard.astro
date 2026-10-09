@@ -1,0 +1,38 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import MoreList from './MoreList.astro';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, summary, period, role, color, cover, coverFit, highlights, stack } = project.data;
+---
+
+<article class="card trace" style={`--c: ${color}`}>
+  <div class:list={['cover', `fit-${coverFit}`]}>
+    {
+      cover ? (
+        <Image src={cover} alt={`${title} 대표 이미지`} width={720} />
+      ) : (
+        <span class="cover-fallback" aria-hidden="true">
+          {title}
+        </span>
+      )
+    }
+  </div>
+  <div class="card-body">
+    <p class="card-meta">
+      <span>{period}</span>
+      <span>{role}</span>
+    </p>
+    <h3>
+      <a class="stretched" href={`/projects/${project.id}/`}>{title}</a>
+    </h3>
+    <p class="card-summary">{summary}</p>
+    {highlights.length > 0 && <MoreList class="highlights" items={highlights} limit={2} />}
+    {stack.length > 0 && <MoreList class="chips" items={stack} limit={5} />}
+  </div>
+</article>

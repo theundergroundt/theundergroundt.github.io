@@ -1,0 +1,23 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) =>
+  b.data.start.localeCompare(a.data.start),
+);
+---
+
+<Base title="Projects" description="프로젝트 전체 목록">
+  <a class="back" href="/#projects">← 메인으로</a>
+
+  <section class="reveal" style="padding-top: 20px;">
+    <div class="section-head">
+      <h2>Projects</h2>
+      <span style="font-size: 14px; color: var(--text-faint);">{projects.length}개</span>
+    </div>
+    <div class="cards reveal-body">
+      {projects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,40 @@
+---
+// 분류별 기술 목록. 기술 이름을 누르면 그 줄 아래에 설명 카드가 펼쳐진다.
+interface Props {
+  groups: { category: string; items: { name: string; desc: string; color?: string }[] }[];
+}
+
+const { groups } = Astro.props;
+---
+
+<dl class="spec reveal-body">
+  {
+    groups.map((group) => (
+      <div class="spec-row">
+        <dt>{group.category}</dt>
+        <dd data-skill-group>
+          <ul class="chips">
+            {group.items.map((item) => (
+              <li class="skill-item">
+                <button
+                  type="button"
+                  class="skill"
+                  aria-expanded="false"
+                  data-desc={item.desc}
+                  data-color={item.color}
+                  style={item.color ? `--sc: ${item.color}` : undefined}
+                >
+                  {item.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div class="skill-panel trace" hidden aria-live="polite">
+            <strong />
+            <p />
+          </div>
+        </dd>
+      </div>
+    ))
+  }
+</dl>

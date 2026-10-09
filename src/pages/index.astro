@@ -1,0 +1,142 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import profilePhoto from '../assets/profile.jpg';
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import SkillTable from '../components/SkillTable.astro';
+import { profile, skills, tools, education, certifications, awards } from '../data/profile';
+
+const allProjects = (await getCollection('projects')).sort((a, b) =>
+  b.data.start.localeCompare(a.data.start),
+);
+// 메인에는 featured 프로젝트를 최신순으로 3개까지만 보여준다.
+const toc = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'about', label: 'About' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'tools', label: 'Tools' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'education', label: 'Education' },
+  { id: 'awards', label: 'Awards' },
+];
+const featured = allProjects.filter((project) => project.data.featured).slice(0, 3);
+---
+
+<Base toc={toc}>
+  <div class="hero">
+    <p class="tagline"><em>경계</em>를 설계해 신뢰를 만드는 백엔드 개발자</p>
+    <div class="hero-name">
+      <h1>{profile.name}</h1>
+      <span class="position">{profile.position}</span>
+    </div>
+  </div>
+
+  <section class="reveal intro">
+    <div id="profile">
+      <div class="section-head"><h2>Profile</h2></div>
+      <div class="profile reveal-body">
+        <Image class="profile-photo" src={profilePhoto} alt={`${profile.name} 사진`} width={320} />
+        <dl class="profile-list">
+          {
+            profile.details.map((item) => (
+              <div>
+                <dt>{item.label}</dt>
+                <dd>{item.href ? <a href={item.href}>{item.value}</a> : item.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+    <div id="about">
+      <div class="section-head"><h2>About</h2></div>
+      <div class="lead reveal-body">
+        {profile.about.map((line) => <p>{line}</p>)}
+      </div>
+    </div>
+  </section>
+
+  <section id="skills" class="reveal">
+    <div class="section-head">
+      <h2>Skills</h2>
+      <span class="hint">스킬을 클릭하면 역량 설명이 나옵니다</span>
+    </div>
+    <SkillTable groups={skills} />
+  </section>
+
+  <section id="tools" class="reveal">
+    <div class="section-head"><h2>Tools</h2></div>
+    <SkillTable groups={tools} />
+  </section>
+
+  <section id="projects" class="reveal">
+    <div class="section-head">
+      <h2>Projects</h2>
+      <a href="/projects/">전체 보기 ({allProjects.length}) →</a>
+    </div>
+    <div class="cards reveal-body">
+      {featured.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+
+  <section id="education" class="reveal">
+    <div class="two-col">
+      <div>
+        <div class="section-head"><h2>Education</h2></div>
+        <div class="table-scroll reveal-body">
+          <table>
+            <tbody>
+              {
+                education.map((row) => (
+                  <tr>
+                    <td class="period">{row.period}</td>
+                    <td>{row.name}</td>
+                    <td class="result">{row.note}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="section-head"><h2>Certifications & Language</h2></div>
+        <div class="table-scroll reveal-body">
+          <table>
+            <tbody>
+              {
+                certifications.map((row) => (
+                  <tr>
+                    <td class="period">{row.kind}</td>
+                    <td>{row.name}</td>
+                    <td class="period">{row.date}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="awards" class="reveal">
+    <div class="section-head"><h2>Awards & Activities</h2></div>
+    <div class="table-scroll reveal-body">
+      <table>
+        <tbody>
+          {
+            awards.map((row) => (
+              <tr>
+                <td class="period">{row.period}</td>
+                <td>{row.name}</td>
+                <td class="result">{row.result}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</Base>

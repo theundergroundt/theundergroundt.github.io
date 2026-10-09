@@ -1,0 +1,181 @@
+---
+import '../styles/global.css';
+import { profile } from '../data/profile';
+
+interface Props {
+  title?: string;
+  description?: string;
+  // 넘기면 넓은 화면에서 오른쪽에 목차가 고정된다.
+  toc?: { id: string; label: string }[];
+}
+
+const { title, description = profile.tagline, toc } = Astro.props;
+const pageTitle = title ? `${title} — ${profile.name}` : `${profile.name} — ${profile.position}`;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+  </head>
+  <body class={toc ? 'has-toc' : undefined}>
+    <div class="spine" aria-hidden="true"></div>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">{profile.name}</a>
+        <nav class="nav" aria-label="섹션">
+          <a href="/#profile">Profile</a>
+          <a href="/#about">About</a>
+          <a href="/#skills">Skills</a>
+          <a href="/#tools">Tools</a>
+          <a href="/#projects">Projects</a>
+          <a href="/#education">Education</a>
+          <a href="/#awards">Awards</a>
+        </nav>
+      </div>
+    </header>
+    {
+      toc ? (
+        <div class="wrap with-toc">
+          <main>
+            <slot />
+          </main>
+          <nav class="toc" aria-label="목차">
+            <p>CONTENTS</p>
+            <ol>
+              {toc.map((item) => (
+                <li>
+                  <a href={`#${item.id}`}>{item.label}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </div>
+      ) : (
+        <main class="wrap">
+          <slot />
+        </main>
+      )
+    }
+    <footer class="site-footer">
+      <div class="wrap">© {profile.name}</div>
+    </footer>
+
+    <script>
+      // 1) 화면에 들어온 섹션·카드에 .in 을 붙여 선을 그리고 내용을 보여준다.
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('in');
+              observer.unobserve(entry.target);
+            }
+          }
+        },
+        // 섹션이 아무리 길어도 윗부분이 화면 아래쪽 15% 선을 넘으면 나타난다.
+        { threshold: 0, rootMargin: '0px 0px -15% 0px' },
+      );
+      document.querySelectorAll('.reveal, .work').forEach((el) => observer.observe(el));
+
+      // 2) 스크롤 진행에 맞춰 왼쪽 선을 늘린다.
+      const root = document.documentElement;
+      let ticking = false;
+      const updateProgress = () => {
+        const max = root.scrollHeight - window.innerHeight;
+        const progress = max > 0 ? window.scrollY / max : 1;
+        root.style.setProperty('--progress', String(progress));
+        // 더 내려갈 곳이 없으면 아직 안 나타난 것도 모두 보여준다.
+        if (progress > 0.98) {
+          document.querySelectorAll('.reveal, .work').forEach((el) => el.classList.add('in'));
+        }
+        ticking = false;
+      };
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(updateProgress);
+          }
+        },
+        { passive: true },
+      );
+      updateProgress();
+
+      // 3) 오른쪽 목차: 지금 보고 있는 섹션을 표시한다.
+      const tocLinks = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+      if (tocLinks.length > 0) {
+        const targets = tocLinks
+          .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+          .filter((el): el is HTMLElement => el !== null);
+        const markCurrent = () => {
+          // 화면 위에서 1/3 지점을 지난 마지막 섹션이 현재 섹션이다.
+          const line = window.innerHeight / 3;
+          let current = targets[0];
+          for (const target of targets) {
+            if (target.getBoundingClientRect().top <= line) current = target;
+          }
+          const atBottom = window.innerHeight + window.scrollY >= root.scrollHeight - 2;
+          if (atBottom) current = targets[targets.length - 1];
+          for (const link of tocLinks) {
+            link.setAttribute('aria-current', String(link.hash === `#${current?.id}`));
+          }
+        };
+        window.addEventListener('scroll', () => requestAnimationFrame(markCurrent), { passive: true });
+        markCurrent();
+      }
+
+      // 4) 기술 이름 버튼: 누르면 같은 줄 아래에 설명 카드를 펼친다. 다시 누르면 닫는다.
+      document.addEventListener('click', (event) => {
+        const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.skill');
+        if (!button) return;
+        const group = button.closest('[data-skill-group]');
+        const panel = group?.querySelector<HTMLElement>('.skill-panel');
+        if (!group || !panel) return;
+        const wasOpen = button.getAttribute('aria-expanded') === 'true';
+        group.querySelectorAll('.skill').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        panel.classList.remove('is-drawn');
+        if (wasOpen) {
+          panel.hidden = true;
+          return;
+        }
+        button.setAttribute('aria-expanded', 'true');
+        panel.querySelector('strong')!.textContent = button.textContent?.trim() ?? '';
+        panel.querySelector('p')!.textContent = button.dataset.desc ?? '';
+        // 카드 색을 누른 기술의 색으로 맞춘다 (없으면 기본 연두).
+        if (button.dataset.color) panel.style.setProperty('--c', button.dataset.color);
+        else panel.style.removeProperty('--c');
+        panel.hidden = false;
+        // 다음 프레임에 붙여야 테두리가 처음부터 다시 그려진다.
+        requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('is-drawn')));
+      });
+
+      // 5) "+n" 버튼: 접힌 항목을 펼치고 다시 접는다.
+      document.addEventListener('click', (event) => {
+        const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.more');
+        if (!button) return;
+        const list = button.closest('[data-more]');
+        if (!list) return;
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        list.querySelectorAll<HTMLElement>('[data-extra]').forEach((item) => (item.hidden = expanded));
+        button.setAttribute('aria-expanded', String(!expanded));
+        button.textContent = expanded ? (button.dataset.label ?? '') : '접기';
+      });
+    </script>
+  </body>
+</html>

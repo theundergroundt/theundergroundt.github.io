@@ -1,0 +1,24 @@
+---
+// limit 개까지만 보여주고 나머지는 "+n" 버튼으로 펼친다.
+interface Props {
+  items: string[];
+  limit: number;
+  class?: string;
+}
+
+const { items, limit, class: className } = Astro.props;
+const hiddenCount = Math.max(items.length - limit, 0);
+---
+
+<ul class={className} data-more>
+  {items.map((item, i) => <li hidden={i >= limit} data-extra={i >= limit ? '' : undefined}>{item}</li>)}
+  {
+    hiddenCount > 0 && (
+      <li class="more-item">
+        <button type="button" class="more" aria-expanded="false" data-label={`+${hiddenCount}`}>
+          +{hiddenCount}
+        </button>
+      </li>
+    )
+  }
+</ul>
