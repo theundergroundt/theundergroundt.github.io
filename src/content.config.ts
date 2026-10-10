@@ -52,19 +52,23 @@ const projects = defineCollection({
           items: z.array(z.string()).default([]),
         })
         .default({ title: '프로젝트 성과', items: [] }),
-      // 상세 페이지의 "내가 한 일". 한 일 → 한 이유 → 결과 및 성과 순서로 보인다.
+      // 상세 페이지의 "내가 한 일". 문제 → 고민 → 해결 → 결과 순서로 보인다.
       // 각 칸은 문장 하나 또는 목록(여러 줄)으로 쓸 수 있다.
+      // (예전 형식인 did / why 로 쓴 카드는 한 일 → 한 이유 → 결과로 보인다.)
       works: z
         .array(
           z.object({
             title: z.string(),
             // 예: Trouble Shooting. 적으면 제목 옆에 태그로 붙는다.
             tag: z.string().optional(),
+            problem: textBlock.optional(),
+            concern: textBlock.optional(),
+            solution: textBlock.optional(),
+            did: textBlock.optional(),
+            why: textBlock.optional(),
             // 카드 아래에 붙는 사진 (없어도 됨). imageCaption 은 사진 설명.
             image: image().optional(),
             imageCaption: z.string().optional(),
-            did: textBlock,
-            why: textBlock,
             result: textBlock,
           }),
         )

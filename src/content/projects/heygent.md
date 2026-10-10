@@ -5,7 +5,7 @@ start: "2026-04"
 period: 2026.04 ~ 2026.05
 duration: 5주
 team: 7명
-role: AI / IoT / JiraOps
+role: AI / BE / IoT / JiraOps
 category: SSAFY 자율 프로젝트
 featured: true
 color: "#7c5cff"
@@ -16,7 +16,7 @@ highlights:
 repo: https://github.com/theundergroundt/HeyGent/blob/develop/README.md
 stack: [Python, FastAPI, Spring Boot, PostgreSQL, Redis, MQTT]
 duties:
-  summary: 백엔드 팀장 (AI / IoT / JiraOps) — 장기기억 시스템, IoT 디스플레이 담당
+  summary: 백엔드 팀장 (AI / BE / IoT / JiraOps) — 장기기억 시스템, IoT 디스플레이 담당
   items:
     - Python AI 서버와 Java 백엔드에 걸친 장기기억 저장·회상 구현
     - MQTT 기반 기기 표시 파이프라인 구현, ESP32 펌웨어 개발
@@ -24,26 +24,25 @@ duties:
     - Jira 이슈·일정 관리, Git 컨벤션 수립
     - Notion–n8n–Mattermost 회고 자동화 구축
 works:
-  - title: 장기기억 시스템
-    did:
-      - 기억 저장 흐름(추출 → 중복 시 갱신, 만료 시 폐기)과 회상 흐름(선별 → 답변 반영 → 사용 여부 기록) 설계
-      - Python AI 서버와 Java 백엔드에 걸쳐 구현, 저장소는 PostgreSQL + pgvector 사용
-    why: 대화를 쌓아 두기만 하면 낡은 기억이 오답을 만들고, 회상한 기억이 실제로 쓰였는지 확인할 수 없음
-    result:
-      - 기억 검색 API 평균 23.57ms, 기억 활성화에 따른 응답 시간 차이 1% 미만
-      - 질문 18개 중 관련 있는 6개에만 기억 주입, 만료 기억 노출 0건
-  - title: IoT 디스플레이 파이프라인
-    did: AI 작업 상태를 MQTT로 ESP32 기기 화면에 표시하는 파이프라인 구현, 우선순위와 유지 시간으로 표시 대상을 정하는 규칙 설계
-    why: 동시 작업은 여러 개인데 화면은 1개라, 최신 상태만 표시하면 "입력 대기" 신호가 덮여 작업이 멈춘 채 방치됨
-    result: 입력 대기를 최우선으로 표시하고, 표시 실패가 AI 실행에 영향을 주지 않도록 분리
-  - title: 대화가 몰릴 때 기억 추출이 누락되는 문제
-    tag: Trouble Shooting
-    did: 기억용 LLM 호출에 지수 백오프 재시도 적용, 기억 장애가 답변 실패로 번지지 않도록 분리
-    why: 대화량 증가 시 기억 추출 실패 반복. 로그 추적 결과 외부 LLM API의 요청 한도 초과(429)가 원인
-    result: 한도 초과 시 재시도로 추출 지속, 외부 API 중단 시에도 답변 정상 반환
+  - title: 기억이 답변을 오염시키지 않게 넣기
+    problem: DB 레코드를 그대로 프롬프트에 넣으면 과거 발화가 현재 지시처럼 동작하고, 관련 없는 기억까지 들어감
+    concern: 기억을 "명령"이 아닌 "참고 컨텍스트"로만 쓰이게 하려면
+    solution: 회상 여부를 먼저 판단한 뒤 pgvector 유사도 검색, 결과는 전용 태그 블록으로 격리하고 길이 제한
+    result: 질문 18개 중 관련 있는 6개에만 주입, 만료 기억 노출 0건, 검색 평균 23.57ms
+  - title: 불러온 기억이 실제로 쓰였는지 판정
+    problem: 불러온 기억이 답변에 쓰였는지 알 수 없어 유용한 기억을 가려낼 수 없음
+    concern: 토큰 겹침만으로는 표현이 바뀌면 놓치고, 주제어만 같아도 쓰인 것으로 판정
+    solution: 휴리스틱 1차, LLM 검증 2차로 판정. 타임아웃 시 휴리스틱으로 폴백, 작업 ID 기준 멱등 처리. 판정 결과는 프론트 디버그 패널에 표시
+    result: 답변마다 어떤 기억이 회상되고 쓰였는지 화면에서 확인, 기억별 사용 통계 확보와 중복 집계 차단
   - title: 기억 일괄 저장이 통째로 롤백되는 문제
     tag: Trouble Shooting
-    did: AI 서버에서 수정 대상이 겹치는 후보를 사전 제외하고, 백엔드에서도 중복 수정을 무시하도록 이중 방어
-    why: 여러 기억 후보가 같은 기존 기억을 수정 대상으로 지정해 정합성 오류 발생, 묶음 전체 저장 실패
-    result: 후보 1건의 충돌이 묶음 전체 저장 실패로 이어지지 않음
+    problem: 여러 기억 후보가 같은 레코드를 수정 대상으로 지정해 정합성 오류 발생, 배치 트랜잭션 전체 롤백
+    concern: 같은 대상을 수정하려는 후보 중 무엇을 반영할지
+    solution: 먼저 처리된 후보만 반영하고 겹치는 후보는 건너뜀. AI 서버와 백엔드 양쪽에서 이중 방어
+    result: 후보 1건의 충돌이 배치 전체 롤백으로 이어지지 않음
+  - title: 화면 하나에 여러 작업 표시하기
+    problem: 동시 작업은 여러 개인데 화면은 하나. 최신 상태만 표시하면 "입력 대기" 신호가 덮임
+    concern: 여러 작업 중 지금 무엇을 보여줄지
+    solution: 작업 상태별 우선순위와 TTL 지정, 중요한 신호만 MQTT QoS 1로 발행
+    result: 작업이 몰려도 응답이 필요한 작업이 항상 화면에 표시됨
 ---

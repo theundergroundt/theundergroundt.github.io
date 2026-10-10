@@ -79,17 +79,22 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
                 </h3>
                 <ol class="steps">
                   {[
+                    { label: '문제', lines: work.problem },
+                    { label: '고민', lines: work.concern },
+                    { label: '해결', lines: work.solution },
                     { label: '한 일', lines: work.did },
                     { label: '한 이유', lines: work.why },
-                    { label: '결과 및 성과', lines: work.result, last: true },
-                  ].map((step) => (
+                    { label: work.problem ? '결과' : '결과 및 성과', lines: work.result, last: true },
+                  ]
+                    .filter((step) => step.lines && step.lines.length > 0)
+                    .map((step) => (
                     <li class:list={{ conclusion: step.last }}>
                       <span class="label">{step.label}</span>
-                      {step.lines.length === 1 ? (
-                        <p>{step.lines[0]}</p>
+                      {step.lines!.length === 1 ? (
+                        <p>{step.lines![0]}</p>
                       ) : (
                         <ul class="lines">
-                          {step.lines.map((line) => (
+                          {step.lines!.map((line) => (
                             <li>{line}</li>
                           ))}
                         </ul>
