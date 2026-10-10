@@ -79,30 +79,39 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
                 </h3>
                 <ol class="steps">
                   {[
-                    { label: '문제', lines: work.problem },
+                    { label: '문제', lines: work.problem, kind: 'problem' },
                     { label: '고민', lines: work.concern },
-                    { label: '해결', lines: work.solution },
+                    { label: '해결', lines: work.solution, kind: 'solution' },
                     { label: '한 일', lines: work.did },
                     { label: '한 이유', lines: work.why },
                     { label: work.problem ? '결과' : '결과 및 성과', lines: work.result, last: true },
                   ]
                     .filter((step) => step.lines && step.lines.length > 0)
                     .map((step) => (
-                    <li class:list={{ conclusion: step.last }}>
+                    <li class:list={[step.kind, { conclusion: step.last }]}>
                       <span class="label">{step.label}</span>
-                      {step.lines!.length === 1 ? (
-                        <p>{step.lines![0]}</p>
-                      ) : (
-                        <ul class="lines">
-                          {step.lines!.map((line) => (
-                            <li>{line}</li>
-                          ))}
-                        </ul>
-                      )}
+                      <div class="step-body">
+                        {step.lines!.length === 1 ? (
+                          <p>{step.lines![0]}</p>
+                        ) : (
+                          <ul class="lines">
+                            {step.lines!.map((line) => (
+                              <li>{line}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {/* 그림은 해결 칸 바로 아래에 붙인다 */}
+                        {step.kind === 'solution' && work.image && (
+                          <figure class="step-figure">
+                            <Image src={work.image} alt={work.imageCaption ?? work.title} width={1400} />
+                            {work.imageCaption && <figcaption>{work.imageCaption}</figcaption>}
+                          </figure>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ol>
-                {work.image && (
+                {work.image && !work.solution && (
                   <figure class="work-figure">
                     <Image src={work.image} alt={work.imageCaption ?? work.title} width={1200} />
                     {work.imageCaption && <figcaption>{work.imageCaption}</figcaption>}

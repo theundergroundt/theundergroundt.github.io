@@ -968,6 +968,32 @@ td.result {
   background: #000000;
 }
 
+/* 해결 칸 아래에 붙는 그림 */
+.step-body {
+  min-width: 0;
+}
+
+.step-figure {
+  margin: 14px 0 2px;
+}
+
+.step-figure img {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.step-figure figcaption {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
 /* 카드 아래 사진 */
 .work-figure {
   margin: 0;
@@ -1005,6 +1031,10 @@ td.result {
   letter-spacing: 0.02em;
   vertical-align: middle;
   white-space: nowrap;
+}
+
+.steps li.problem .label {
+  color: #dc2626;
 }
 
 .steps li.conclusion .label {
