@@ -135,7 +135,7 @@ export const certifications = [
 export const awards = [
   { period: '2026.03', name: 'SSAFY 14기 특화 프로젝트 (Piview)', result: '🏆 우수상 (1위)' },
   { period: '2025.07 ~ 2026.06', name: '삼성 청년 SW·AI 아카데미 (SSAFY) 14기', result: '활동' },
-  { period: '2023 ~ 2024', name: '지능형 로봇전공 서포터즈', result: '활동' },
+  { period: '2022.11 ~ 2024.02', name: '지능형 로봇 분야 서포터즈', result: '활동' },
   { period: '2023.12', name: '부경대학교 LINC 3.0 캡스톤디자인 단과대학 경진대회', result: '🏆 우수상' },
   { period: '2023.11', name: '제11회 K-해커톤 대회', result: '🏆 우수상' },
   { period: '2022.12', name: '제2회 디지털 혁신공유대학 메타버스 콘테스트', result: '🏆 협의회장상' },
