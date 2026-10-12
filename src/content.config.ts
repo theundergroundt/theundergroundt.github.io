@@ -32,6 +32,8 @@ const projects = defineCollection({
       repo: z.string().url().optional(),
       // 소개·시연 영상. public/ 아래 경로 (예: /videos/이름.mp4). videoPoster 는 재생 전 표시할 그림.
       video: z.string().optional(),
+      // 유튜브 소개 영상의 영상 ID (주소의 v= 뒤 값). video 대신 쓰면 유튜브 플레이어가 들어간다.
+      youtube: z.string().optional(),
       videoPoster: z.string().optional(),
       // 카드에 보이는 대표 역할·기능. 2개를 넘으면 +n 으로 접힌다.
       highlights: z.array(z.string()).default([]),

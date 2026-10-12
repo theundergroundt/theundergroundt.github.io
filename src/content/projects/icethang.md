@@ -10,6 +10,7 @@ category: SSAFY 공통 프로젝트
 featured: true
 color: "#2f9be0"
 cover: ../../assets/projects/icethang.png
+youtube: 5AmrbxufGHA
 highlights:
   - 이탈 횟수 대신 비집중 지속 시간을 누적하는 상태 머신 설계
   - STOMP 채널 인터셉터로 무인증 소켓 연결·구독 차단

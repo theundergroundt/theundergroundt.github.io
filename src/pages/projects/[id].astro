@@ -9,7 +9,7 @@ export async function getStaticPaths() {
 }
 
 const { project } = Astro.props;
-const { title, summary, period, duration, team, role, category, color, repo, video, videoPoster, stack, duties, outcomes, works } = project.data;
+const { title, summary, period, duration, team, role, category, color, repo, video, videoPoster, youtube, stack, duties, outcomes, works } = project.data;
 const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
 ---
 
@@ -38,10 +38,21 @@ const hasDuties = Boolean(duties.summary) || duties.items.length > 0;
     </div>
 
     {
-      video && (
+      (video || youtube) && (
         <section class="reveal">
           <div class="section-head"><h2>소개 영상</h2></div>
-          <video class="project-video reveal-body" controls preload="metadata" poster={videoPoster} src={video} />
+          {youtube ? (
+            <iframe
+              class="project-video reveal-body"
+              src={`https://www.youtube-nocookie.com/embed/${youtube}`}
+              title={`${title} 소개 영상`}
+              loading="lazy"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            />
+          ) : (
+            <video class="project-video reveal-body" controls preload="metadata" poster={videoPoster} src={video} />
+          )}
         </section>
       )
     }
