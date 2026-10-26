@@ -1,0 +1,602 @@
+---
+// HeyGent 단독 포트폴리오 페이지. 사이트 어디에서도 링크하지 않고 주소(/heygent/)로만 접속한다.
+// 브라우저에서 인쇄 → PDF로 저장하면 A4 비율로 나온다.
+import '../styles/global.css';
+import { Image } from 'astro:assets';
+import iotDiagram from '../assets/projects/heygent-iot-display.webp';
+import mainShot from '../assets/projects/heygent-main.webp';
+import memorySave from '../assets/projects/heygent-memory-save.webp';
+import memoryRecall from '../assets/projects/heygent-memory-recall.webp';
+import taskFlow from '../assets/projects/heygent-task-flow.png';
+import kskillWeather from '../assets/projects/heygent-kskill-weather.webp';
+import { profile } from '../data/profile';
+
+// 포인트 색 없이 무채색으로 정리한다.
+const color = '#3a4048';
+
+type Step = { label: string; kind?: string; lines: string[] };
+type Block = { title: string; steps: Step[] };
+
+const overview = {
+  background: [
+    'Codex로 여러 작업을 동시에 돌리면 어느 작업이 끝났는지, 멈췄는지, 승인을 기다리는지 알기 어려움',
+    'MCP와 Skill이 실행되는 과정이 보이지 않아 프롬프트를 어디서 고쳐야 할지 찾을 수 없음',
+  ],
+  goals: [
+    '작업 상태를 세분화하고, 중요한 전환점은 소리와 기기로 알려 주는 개인 비서',
+    '오픈소스처럼 스킬을 자유롭게 붙일 수 있는 확장 구조',
+    '에이전트의 동작 원리를 이해한 기반 위에서 에이전트 전체를 직접 개발',
+  ],
+  results: [
+    'AI 서버가 작업 상태(시작, 조사 중, 작성 중, 검토 중 등)를 간추려 Spring과 MQTT를 거쳐 IoT 디스플레이에 실시간 전달',
+    '5주 만에 완성, 시연에서 SRT 예약·기사 요약·Notion 페이지 생성 3개 작업 성공',
+  ],
+};
+
+// 담당 역할: [제목] 설명
+const roles = {
+  summary: '백엔드 팀장 — AI 서버 지능 계층, IoT 담당',
+  team: [
+    { title: '기획', text: '서비스 주제 제안과 기획' },
+    { title: '일정·협업 관리', text: 'Jira 이슈·일정 관리, Git 컨벤션 수립' },
+    { title: '이슈 보고 자동화', text: 'AWS Lambda로 작업자별 Jira 이슈 현황을 매일 정해진 시간에 Mattermost로 전송' },
+    { title: '회고 자동화', text: 'Notion–n8n–Mattermost 연동으로 회고 정리 자동화' },
+  ],
+  features: [
+    {
+      title: 'pgvector 기반 AI 장기기억 구현',
+      text: '대화에서 기억 후보를 추출해 기존 기억과 비교한 뒤 추가·갱신·병합·무효화를 판단하고, 유사도 검색으로 관련 기억을 불러와 프롬프트에 주입',
+    },
+    {
+      title: '작업 상태 실시간 전달 파이프라인 설계·개발',
+      text: 'FastAPI가 간추린 작업 상태를 Spring으로 보내고, MQTT로 ESP32 기기 화면까지 전달',
+    },
+    { title: 'IoT 기기 제작', text: '기기 외형을 Fusion 360으로 설계·3D 출력, ESP32-C3 펌웨어 개발' },
+    {
+      title: '오케스트레이션·스킬 확장 구조',
+      text: '오케스트레이션 초기 설계, 스킬 정의만 추가하면 자동으로 연결되는 확장 구조 개발',
+    },
+  ],
+};
+
+// ==문구== 로 감싼 부분은 빨간색으로 강조한다.
+const emphasize = (line: string) =>
+  line.split(/(==[^=]+==)/).filter(Boolean).map((part) =>
+    part.startsWith('==') && part.endsWith('==')
+      ? { text: part.slice(2, -2), red: true }
+      : { text: part, red: false },
+  );
+
+const memory: Block = {
+  title: '장기기억: 갱신 판단과 관측',
+  steps: [
+    {
+      label: '문제',
+      kind: 'problem',
+      lines: [
+        '바뀐 취향을 말해도 ==예전 취향이 장기기억에 함께 남음==',
+        '기억을 불러와 프롬프트에 넣어도, 실제 답변에 반영됐는지 확인할 방법이 없음',
+      ],
+    },
+    {
+      label: '원인',
+      lines: [
+        '저장 과정을 보여주는 디버그 패널을 만들어, 저장 연산이 "추가"만 실행되는 것을 발견',
+        'AI 서버가 고정 신호어 매칭으로 연산을 정해 모순이나 갱신을 알아차리지 못하고 대부분 추가로 처리. 백엔드가 지원하는 갱신·무효화를 쓰지 못해 모순된 예전 기억이 남음',
+      ],
+    },
+    {
+      label: '해결',
+      lines: [
+        '규칙 대신 LLM으로 판단: 신호어를 보강하는 방식은 "고기도 좋고 생선도 좋아"처럼 함께 남겨야 할 기억까지 지웠음. 저장 전에 기존 기억과 발화를 함께 넘겨, LLM이 추가·갱신·병합·무효화를 의미로 판단하게 하고, 규칙은 LLM이 실패할 때의 대체 경로로 남김',
+        'LLM 응답 검증: LLM이 돌려준 연산과 대상 기억이 실제로 불러온 기억 안에 있는지 대조해, 환각으로 엉뚱한 기억을 지우는 것을 차단',
+        '사용 여부 관측: 불러온 기억을 실제로 쓴 것과 안 쓴 것으로 나눠 디버그 패널에 표시. 1차는 단어 겹침 규칙, 2차는 LLM 검증으로 판정하고, LLM이 3초 안에 응답하지 않으면 규칙 결과로 대체. 같은 작업에서는 한 번만 기록해 중복 집계를 막음',
+      ],
+    },
+  ],
+};
+
+const memoryResults = [
+  { test: '바뀐 취향 24건', goal: '바뀐 취향 반영', before: '예전 선호 잔존 24/24 (100%)', after: '예전 선호 잔존 2/24 (약 8%)' },
+  { test: '모순 12건', goal: '예전 기억 정리', before: '보강한 규칙 12/12', after: 'LLM 12/12' },
+  { test: '양립 12건', goal: '두 기억 모두 보존', before: '보강한 규칙 0/12 (전부 삭제)', after: 'LLM 12/12 (오삭제 0)' },
+];
+
+const memoryResultLines = [
+  '바뀐 취향 반영이 100% 실패에서 약 92% 성공으로 개선',
+  '장기기억을 회상 → 주입 → 사용 → 저장까지 처음부터 끝까지 검증할 수 있게 됨',
+];
+
+const iot: Block = {
+  title: 'IoT 실시간 상태 전달: 화면 하나에 무엇을 보여줄지',
+  steps: [
+    {
+      label: '문제',
+      kind: 'problem',
+      lines: [
+        '여러 작업이 동시에 도는데 상태를 보여줄 ESP32 화면은 하나라, ==시작·진행·완료·입력 대기 이벤트가 한꺼번에 몰림==',
+        '입력 대기가 다른 이벤트에 묻히면 작업 전체가 멈춘 채 지연됨',
+        '처음에는 프론트가 표시를 요청하는 구조라, 브라우저를 닫으면 기기도 멈춤',
+      ],
+    },
+    {
+      label: '해결',
+      kind: 'solution',
+      lines: [
+        '이벤트 출발점 이동: 작업 상태를 가장 먼저 아는 AI 서버에서 이벤트를 보내도록 바꿔, 브라우저와 상관없이 동작',
+        '의미 기반 우선순위: 입력 대기(30분 유지) > 완료·실패·취소(3초 강조) > 시작(2초) > 버튼으로 고른 작업(15초) > 그 외 진행 중인 작업. 버튼을 누르면 작업을 차례로 넘겨 봄',
+        '신호별 전달 보장 차등: 놓치면 안 되는 완료·실패·취소·대기는 MQTT QoS 1, 다음 갱신이 덮는 진행 신호는 QoS 0',
+        '상태 저장과 장애 격리: 표시 우선권은 Redis에 유지 시간과 함께 저장해 만료되면 자동으로 풀림. 화면 표시가 실패해도 AI 작업은 계속 진행',
+      ],
+    },
+    {
+      label: '결과',
+      lines: [
+        '작업이 몰려도 화면이 가장 중요한 상태를 중심으로 안정되고, 입력 대기가 묻히는 문제가 사라짐',
+        'AI 서버 → Spring → MQTT → ESP32로 이어지는 실시간 상태 표시 파이프라인을 완성해, 브라우저 없이도 작업 상태를 기기에서 확인 가능',
+      ],
+    },
+  ],
+};
+
+const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT', 'ESP32'];
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>HeyGent — {profile.name} 포트폴리오</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+  </head>
+  <body class="hg" style={`--c: ${color}`}>
+    <main class="wrap">
+      <header class="hg-head">
+        <div class="hg-head-text">
+        <p class="hg-eyebrow">{profile.name} · 포트폴리오</p>
+        <h1>HeyGent <span>AI 작업 실행 플랫폼</span></h1>
+        <p class="hg-summary">
+          자연어 요청을 AI가 여러 작업 단계로 실행하고, 웹·모바일·IoT 기기·로컬 PC로 실시간 연결하는 멀티 디바이스 AI 작업 실행 플랫폼
+        </p>
+        <dl class="meta">
+          <div><dt>기간</dt><dd>2026.04 ~ 2026.05 (5주)</dd></div>
+          <div><dt>인원</dt><dd>7명</dd></div>
+          <div><dt>역할</dt><dd>백엔드 팀장 — AI 서버 지능 계층, IoT 담당</dd></div>
+        </dl>
+        <ul class="chips hg-stack">
+          {stack.map((item) => <li>{item}</li>)}
+        </ul>
+        </div>
+        <figure class="hg-shot">
+        <Image src={mainShot} alt="HeyGent 메인 화면: 작업 세션이 건물의 층으로 표시되는 사무실 화면" width={1600} />
+      </figure>
+      </header>
+
+
+      <section>
+        <div class="section-head"><h2>프로젝트 개요</h2></div>
+        <div class="hg-overview">
+          <div class="hg-box">
+            <h3>기획 배경 <small>주제 직접 제안</small></h3>
+            <ul class="lines">
+              {overview.background.map((line) => <li>{line}</li>)}
+            </ul>
+          </div>
+          <div class="hg-box">
+            <h3>목표</h3>
+            <ol class="hg-goals">
+              {overview.goals.map((line) => <li>{line}</li>)}
+            </ol>
+          </div>
+          <div class="hg-box hg-wide">
+            <h3>담당 역할 <small>{roles.summary}</small></h3>
+            <div class="hg-roles">
+              <div>
+                <h4>팀 운영</h4>
+                <ul class="lines">
+                  {roles.team.map((item) => (
+                    <li>
+                      <strong>[{item.title}]</strong> {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4>기능</h4>
+                <ul class="lines">
+                  {roles.features.map((item) => (
+                    <li>
+                      <strong>[{item.title}]</strong> {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="hg-box hg-wide">
+            <h3>구현 결과</h3>
+            <ul class="lines">
+              {overview.results.map((line) => <li>{line}</li>)}
+            </ul>
+            <div class="hg-pair">
+              <figure class="step-figure">
+                <Image src={memorySave} alt="대화에서 '나를 보스라 부르도록' 요청해 기억이 저장되는 화면" width={1000} />
+                <figcaption>기억 저장: "나를 보스라 부르도록"</figcaption>
+              </figure>
+              <figure class="step-figure">
+                <Image src={memoryRecall} alt="다른 세션에서 사용자를 '보스'라고 부르는 화면" width={1000} />
+                <figcaption>다른 세션에서 회상: 사용자를 "보스"라고 호칭</figcaption>
+              </figure>
+              <figure class="step-figure">
+                <Image src={taskFlow} alt="요청 하나가 진행 단계로 나뉘어 표시되는 답변 기록 화면" width={1000} />
+                <figcaption>작업 흐름: 요청의 진행 단계와 담당 에이전트를 실시간으로 표시</figcaption>
+              </figure>
+              <figure class="step-figure">
+                <Image src={kskillWeather} alt="K-Skill로 부산 이번 주 날씨를 조회한 답변 화면" width={1000} />
+                <figcaption>스킬 확장: K-Skill을 붙여 부산 이번 주 날씨 조회</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {
+        [memory, iot].map((block) => (
+          <section>
+            <div class="section-head"><h2>{block.title}</h2></div>
+            <article class="work">
+              <ol class="steps">
+                {block.steps.map((step) => (
+                  <li class={step.kind}>
+                    <span class="label">{step.label}</span>
+                    <div class="step-body">
+                      <ul class="lines">
+                        {step.lines.map((line) => (
+                          <li>
+                            {emphasize(line).map((part) =>
+                              part.red ? <span class="hg-red">{part.text}</span> : part.text,
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      {block === iot && step.kind === 'solution' && (
+                        <figure class="step-figure">
+                          <Image src={iotDiagram} alt="작업 이벤트가 AI 서버, 백엔드, MQTT 브로커를 거쳐 ESP32 화면에 표시되는 흐름" width={1400} />
+                        </figure>
+                      )}
+                    </div>
+                  </li>
+                ))}
+                {block === memory && (
+                  <li class="conclusion">
+                    <span class="label">결과</span>
+                    <div class="step-body">
+                      <div class="table-scroll hg-table">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>실험</th>
+                              <th>목적</th>
+                              <th>이전</th>
+                              <th>이후</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {memoryResults.map((row) => (
+                              <tr>
+                                <td>{row.test}</td>
+                                <td>{row.goal}</td>
+                                <td>{row.before}</td>
+                                <td class="result">{row.after}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <ul class="lines">
+                        {memoryResultLines.map((line) => (
+                          <li>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                )}
+              </ol>
+            </article>
+          </section>
+        ))
+      }
+    </main>
+
+    <style is:global>
+      /* HeyGent 단독 페이지 전용 스타일 */
+      body.hg .wrap {
+        max-width: 960px;
+      }
+
+      .hg-head {
+        margin-top: 48px;
+        padding: 32px 32px 28px;
+        border: 1px solid var(--line-strong);
+        border-radius: 20px;
+      }
+
+      .hg-eyebrow {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-faint);
+        letter-spacing: 0.04em;
+      }
+
+      .hg-head h1 {
+        margin: 6px 0 10px;
+        font-size: clamp(30px, 5vw, 42px);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      .hg-head h1 span {
+        margin-left: 8px;
+        font-size: 0.5em;
+        font-weight: 600;
+        color: var(--text-dim);
+      }
+
+      .hg-summary {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 16px;
+      }
+
+      .hg-stack {
+        margin-top: 16px;
+      }
+
+      body.hg section {
+        padding-top: 48px;
+      }
+
+      body.hg .section-head::after {
+        height: 1px;
+        background: var(--line-strong);
+      }
+
+      body.hg .work {
+        border-color: var(--line);
+      }
+
+      body.hg .work::before {
+        display: none;
+      }
+
+      body.hg .steps li.conclusion .label {
+        color: var(--text-dim);
+      }
+
+      body.hg ::selection {
+        background: #e4e7eb;
+      }
+
+      /* 머리 상자 안: 왼쪽 글, 오른쪽 메인 사진 */
+      .hg-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 24px;
+        align-items: center;
+      }
+
+      .hg-shot {
+        margin: 0;
+      }
+
+      .hg-shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .hg-box .hg-pair {
+        margin-top: 14px;
+      }
+
+      /* 담당 역할: 팀 운영 | 기능 두 칸 */
+      .hg-roles {
+        display: grid;
+        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+        gap: 24px;
+      }
+
+      .hg-roles h4 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-faint);
+        letter-spacing: 0.02em;
+      }
+
+      .hg-red {
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      .hg-roles strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* 구현 결과 사진은 비율이 달라도 같은 크기의 칸에 맞춘다 */
+      .hg-box .hg-pair img {
+        aspect-ratio: 16 / 10;
+        object-fit: contain;
+        background: #f4f5f6;
+      }
+
+      .hg-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .hg-pair .step-figure img {
+        max-width: none;
+      }
+
+      .hg-overview {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .hg-box {
+        padding: 16px 20px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+
+      .hg-wide {
+        grid-column: 1 / -1;
+      }
+
+      .hg-box h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+
+      .hg-box h3 small {
+        margin-left: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-faint);
+      }
+
+      .hg-box .lines,
+      body.hg .steps .lines {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: var(--text-dim);
+        font-size: 14.5px;
+        line-height: 1.6;
+      }
+
+      .hg-box .lines li,
+      body.hg .steps .lines li {
+        position: relative;
+        padding-left: 16px;
+      }
+
+      .hg-box .lines li::before,
+      body.hg .steps .lines li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.75em;
+        width: 8px;
+        height: 2px;
+        background: var(--c);
+      }
+
+      .hg-goals {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-dim);
+        font-size: 14.5px;
+        line-height: 1.6;
+      }
+
+      body.hg .steps > li {
+        grid-template-columns: 64px 1fr;
+      }
+
+      body.hg .steps li.conclusion .lines {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .hg-table {
+        margin-bottom: 12px;
+      }
+
+      .hg-table table {
+        font-size: 13.5px;
+      }
+
+      .hg-table th {
+        padding: 9px 14px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-faint);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hg-table td {
+        padding: 9px 14px;
+        font-weight: 400;
+      }
+
+      .hg-table td.result {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      @media (max-width: 720px) {
+        .hg-head,
+        .hg-overview,
+        .hg-roles,
+        .hg-pair {
+          grid-template-columns: 1fr;
+        }
+
+        .hg-head {
+          padding: 24px 20px;
+        }
+
+        body.hg .steps > li {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        @page {
+          size: 1240px 1754px;
+          margin: 48px 0;
+        }
+
+        html,
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        body.hg .wrap {
+          max-width: 1040px;
+        }
+
+        .hg-head {
+          margin-top: 0;
+        }
+
+        body.hg section,
+        body.hg .work,
+        .hg-box {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </body>
+</html>
