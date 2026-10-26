@@ -1,6 +1,6 @@
 ---
 title: HeyGent
-summary: 사용자 요청을 여러 단계·도구로 실행하는 AI 오케스트레이션 플랫폼
+summary: 사용자 요청을 여러 단계·도구로 실행하는 AI 에이전트 오케스트레이션 플랫폼
 start: "2026-04"
 period: 2026.04 ~ 2026.05
 duration: 5주

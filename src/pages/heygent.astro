@@ -23,9 +23,18 @@ const overview = {
     'MCP와 Skill이 실행되는 과정이 보이지 않아 프롬프트를 어디서 고쳐야 할지 찾을 수 없음',
   ],
   goals: [
-    '작업 상태를 세분화하고, 중요한 전환점은 소리와 기기로 알려 주는 개인 비서',
-    '오픈소스처럼 스킬을 자유롭게 붙일 수 있는 확장 구조',
-    '에이전트의 동작 원리를 이해한 기반 위에서 에이전트 전체를 직접 개발',
+    {
+      title: '작업 과정이 보이는 개인 비서',
+      text: '지금 어떤 에이전트가 어떤 스킬로 무엇을 하는지 사용자가 알기 쉽게 인지하고, 작업 전환 순간은 소리와 기기로 알림',
+    },
+    {
+      title: '내 방식대로 짜는 워크플로우',
+      text: '원하는 에이전트와 스킬을 직접 골라 워크플로우를 만들면, 그 흐름대로 새 세션이 생성되는 맞춤형 구조',
+    },
+    {
+      title: '에이전트 직접 개발',
+      text: '에이전트의 동작 원리를 이해한 기반 위에서 에이전트 전체를 직접 개발',
+    },
   ],
   results: [
     'AI 서버가 작업 상태(시작, 조사 중, 작성 중, 검토 중 등)를 간추려 Spring과 MQTT를 거쳐 IoT 디스플레이에 실시간 전달',
@@ -192,7 +201,11 @@ const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT
           <div class="hg-box">
             <h3>목표</h3>
             <ol class="hg-goals">
-              {overview.goals.map((line) => <li>{line}</li>)}
+              {overview.goals.map((goal) => (
+                <li>
+                  <strong>{goal.title}</strong>: {goal.text}
+                </li>
+              ))}
             </ol>
           </div>
           <div class="hg-box hg-wide">
@@ -506,6 +519,11 @@ const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT
         width: 8px;
         height: 2px;
         background: var(--c);
+      }
+
+      .hg-goals strong {
+        color: var(--text);
+        font-weight: 700;
       }
 
       .hg-goals {
