@@ -6,7 +6,7 @@ period: 2026.01 ~ 2026.02
 duration: 6주
 team: 6명
 role: BE / JiraOps
-category: SSAFY 공통 프로젝트
+category: SSAFY 1차 프로젝트
 featured: true
 color: "#2f9be0"
 cover: ../../assets/projects/icethang.png

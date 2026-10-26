@@ -6,7 +6,7 @@ period: 2026.02 ~ 2026.03
 duration: 5주
 team: 6명
 role: AI / BE / JiraOps
-category: SSAFY 특화 프로젝트
+category: SSAFY 2차 프로젝트
 featured: true
 color: "#c8794a"
 cover: ../../assets/projects/piview.png

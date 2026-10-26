@@ -1,0 +1,376 @@
+---
+// PDF 저장용 한 장짜리 메인 페이지. 사이트 어디에서도 링크하지 않고 주소(/pdf/)로만 접속한다.
+// 브라우저에서 인쇄 → PDF로 저장하면 A4 비율로 나온다.
+import '../styles/global.css';
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import profilePhoto from '../assets/profile.jpg';
+import { profile, skills, tools, education, certifications, awards } from '../data/profile';
+
+const projects = (await getCollection('projects'))
+  .filter((project) => project.data.featured)
+  .sort((a, b) => b.data.start.localeCompare(a.data.start))
+  .slice(0, 3);
+
+const site = 'https://theundergroundt.github.io';
+
+// PDF 전용 스킬 목록. 메인과 같되 Language에 Python을 더한다 (Java 바로 뒤).
+const pdfSkills = skills.map((group) =>
+  group.category === 'Language'
+    ? {
+        ...group,
+        items: group.items.flatMap((item) => (item.name === 'Java' ? [item, { name: 'Python', desc: '' }] : [item])),
+      }
+    : group,
+);
+
+// PDF 전용 소개글. 메인 페이지의 About(profile.about)과는 따로 관리한다.
+const pdfAbout = [
+  '성공하는 장면보다 실패하는 장면을 먼저 떠올리고, 그 예외를 미리 막아 두는 것을 당연하게 여깁니다. 요청이 동시에 몰리거나, 외부 AI가 응답하지 않거나, 사용자가 예상과 다른 데이터를 넣는 순간이 서비스의 신뢰를 결정한다고 생각하기 때문입니다.',
+  'AI는 이런 예외를 가장 많이 만들어 내는 동시에, 현장을 가장 크게 바꿀 수 있는 기술입니다. 그래서 AI의 가능성은 살리되 그 불확실성은 백엔드가 감당하는 설계를 지향합니다. 제가 만든 서비스가 현장에 직접 닿아 피드백을 받고, 그 피드백으로 더 나은 답을 찾아가는 엔지니어가 되고 싶습니다.',
+];
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{profile.name} — 포트폴리오</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+  </head>
+  <body class="pdf">
+    <main class="wrap">
+      <div class="hero">
+        <p class="tagline"><em>보이지 않는 곳</em>에서 신뢰를 만드는 백엔드 개발자</p>
+        <div class="hero-name">
+          <h1>{profile.name}</h1>
+          <span class="position">{profile.position}</span>
+        </div>
+      </div>
+
+      <section class="intro">
+        <div>
+          <div class="section-head"><h2>Profile</h2></div>
+          <div class="profile">
+            <Image class="profile-photo" src={profilePhoto} alt={`${profile.name} 사진`} width={320} />
+            <dl class="profile-list">
+              {
+                profile.details.map((item) => (
+                  <div>
+                    <dt>{item.label}</dt>
+                    <dd>{item.href ? <a href={item.href}>{item.value}</a> : item.value}</dd>
+                  </div>
+                ))
+              }
+            </dl>
+          </div>
+        </div>
+        <div>
+          <div class="section-head"><h2>About</h2></div>
+          <div class="lead">
+            {pdfAbout.map((line) => <p>{line}</p>)}
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Skills</h2></div>
+        <dl class="spec">
+          {
+            pdfSkills.map((group) => (
+              <div class="spec-row">
+                <dt>{group.category}</dt>
+                <dd>
+                  <ul class="chips">
+                    {group.items.map((item) => (
+                      <li>{item.name}</li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Tools</h2></div>
+        <dl class="spec">
+          {
+            tools.map((group) => (
+              <div class="spec-row">
+                <dt>{group.category}</dt>
+                <dd>
+                  <ul class="chips">
+                    {group.items.map((item) => (
+                      <li>{item.name}</li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Projects</h2></div>
+        <div class="pdf-projects">
+          {
+            projects.map((project) => (
+              <article class="pdf-project" style={`--c: ${project.data.color}`}>
+                <div class="pdf-project-head">
+                  <h3>
+                    <a href={`${site}/projects/${project.id}/`}>{project.data.title}</a>
+                  </h3>
+                  <p class="pdf-project-meta">
+                    {project.data.period}
+                    {project.data.duration && ` (${project.data.duration})`}
+                    <br />
+                    {project.data.category} · {project.data.team}
+                  </p>
+                </div>
+                <dl class="pdf-project-body">
+                  <div>
+                    <dt>소개</dt>
+                    <dd>{project.data.summary}</dd>
+                  </div>
+                  <div>
+                    <dt>내 역할</dt>
+                    <dd>{project.data.duties.summary ?? project.data.role}</dd>
+                  </div>
+                  <div>
+                    <dt>내가 한 것</dt>
+                    <dd>
+                      <ul class="lines">
+                        {project.data.highlights.slice(0, 2).map((line) => (
+                          <li>{line}</li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section>
+        <div class="two-col">
+          <div>
+            <div class="section-head"><h2>Education</h2></div>
+            <div class="table-scroll">
+              <table>
+                <tbody>
+                  {
+                    education.map((row) => (
+                      <tr>
+                        <td class="period">{row.period}</td>
+                        <td>{row.name}</td>
+                        <td class="result">{row.note}</td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="section-head"><h2>Certifications & Language</h2></div>
+            <div class="table-scroll">
+              <table>
+                <tbody>
+                  {
+                    certifications.map((row) => (
+                      <tr>
+                        <td class="period">{row.kind}</td>
+                        <td>{row.name}</td>
+                        <td class="period">{row.date}</td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>Awards & Activities</h2></div>
+        <div class="table-scroll">
+          <table>
+            <tbody>
+              {
+                awards.map((row) => (
+                  <tr>
+                    <td class="period">{row.period}</td>
+                    <td>{row.name}</td>
+                    <td class="result">{row.result}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <style is:global>
+      /* PDF 페이지 전용 스타일. 움직임 없이 모든 내용을 처음부터 보여준다. */
+      body.pdf .hero::after,
+      body.pdf .hero-name,
+      body.pdf .hero .tagline {
+        animation: none;
+      }
+
+      body.pdf .hero {
+        margin-top: 40px;
+      }
+
+      body.pdf section {
+        padding-top: 44px;
+      }
+
+      body.pdf .profile-photo {
+        width: 120px;
+      }
+
+      /* 프로젝트: 가로로 긴 상자를 위에서 아래로 */
+      .pdf-projects {
+        display: grid;
+        gap: 12px;
+      }
+
+      .pdf-project {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 24px;
+        padding: 18px 22px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--c);
+        border-radius: var(--radius);
+        background: var(--surface);
+        break-inside: avoid;
+      }
+
+      .pdf-project h3 {
+        margin: 0;
+        font-size: 19px;
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+      }
+
+      .pdf-project h3 a {
+        text-decoration: none;
+      }
+
+      .pdf-project-meta {
+        margin: 6px 0 0;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--text-faint);
+      }
+
+      .pdf-project-body {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+      }
+
+      .pdf-project-body > div {
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        gap: 12px;
+        align-items: baseline;
+      }
+
+      .pdf-project-body dt {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-faint);
+      }
+
+      .pdf-project-body dd {
+        margin: 0;
+        font-size: 14.5px;
+        line-height: 1.6;
+      }
+
+      .pdf-project-body .lines {
+        display: grid;
+        gap: 3px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .pdf-project-body .lines li {
+        position: relative;
+        padding-left: 14px;
+      }
+
+      .pdf-project-body .lines li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.75em;
+        width: 7px;
+        height: 2px;
+        background: var(--c);
+      }
+
+      .pdf-footer {
+        margin: 36px 0 40px;
+        font-size: 13px;
+        color: var(--text-faint);
+        text-align: right;
+      }
+
+      .pdf-footer a {
+        color: var(--accent);
+      }
+
+      @media (max-width: 720px) {
+        .pdf-project {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+      }
+
+      @media print {
+        @page {
+          size: 1240px 1754px;
+          margin: 40px 0;
+        }
+
+        html,
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        body.pdf .wrap {
+          max-width: 1040px;
+        }
+
+        body.pdf section {
+          break-inside: avoid-page;
+        }
+
+        body.pdf .hero {
+          margin-top: 0;
+        }
+      }
+    </style>
+  </body>
+</html>

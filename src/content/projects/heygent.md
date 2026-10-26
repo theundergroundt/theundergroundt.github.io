@@ -6,7 +6,7 @@ period: 2026.04 ~ 2026.05
 duration: 5주
 team: 7명
 role: AI / BE / IoT / JiraOps
-category: SSAFY 자율 프로젝트
+category: SSAFY 3차 프로젝트
 featured: true
 color: "#7c5cff"
 cover: ../../assets/projects/heygent.png
