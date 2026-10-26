@@ -68,13 +68,17 @@ const roles = {
   ],
 };
 
-// ==문구== 로 감싼 부분은 빨간색으로 강조한다.
+// ==문구== 는 빨간색(문제), ++문구++ 는 파란색(해결 핵심), ~~문구~~ 는 초록색(원인 발견)으로 강조한다.
 const emphasize = (line: string) =>
-  line.split(/(==[^=]+==)/).filter(Boolean).map((part) =>
-    part.startsWith('==') && part.endsWith('==')
-      ? { text: part.slice(2, -2), red: true }
-      : { text: part, red: false },
-  );
+  line
+    .split(/(==[^=]+==|\+\+[^+]+\+\+|~~[^~]+~~)/)
+    .filter(Boolean)
+    .map((part) => {
+      if (part.startsWith('==') && part.endsWith('==')) return { text: part.slice(2, -2), tone: 'red' };
+      if (part.startsWith('++') && part.endsWith('++')) return { text: part.slice(2, -2), tone: 'blue' };
+      if (part.startsWith('~~') && part.endsWith('~~')) return { text: part.slice(2, -2), tone: 'green' };
+      return { text: part, tone: '' };
+    });
 
 const memory: Block = {
   title: '장기기억: 갱신 판단과 관측',
@@ -90,16 +94,17 @@ const memory: Block = {
     {
       label: '원인',
       lines: [
-        '저장 과정을 보여주는 디버그 패널을 만들어, 저장 연산이 "추가"만 실행되는 것을 발견',
+        '저장 과정을 보여주는 ~~디버그 패널~~을 만들어, ~~저장 연산이 "추가"만 실행되는 것을 발견~~',
         'AI 서버가 고정 신호어 매칭으로 연산을 정해 모순이나 갱신을 알아차리지 못하고 대부분 추가로 처리. 백엔드가 지원하는 갱신·무효화를 쓰지 못해 모순된 예전 기억이 남음',
       ],
     },
     {
       label: '해결',
+      kind: 'solution',
       lines: [
-        '규칙 대신 LLM으로 판단: 신호어를 보강하는 방식은 "고기도 좋고 생선도 좋아"처럼 함께 남겨야 할 기억까지 지웠음. 저장 전에 기존 기억과 발화를 함께 넘겨, LLM이 추가·갱신·병합·무효화를 의미로 판단하게 하고, 규칙은 LLM이 실패할 때의 대체 경로로 남김',
+        '규칙 대신 LLM으로 판단: 신호어를 보강하는 방식은 "고기도 좋고 생선도 좋아"처럼 함께 남겨야 할 기억까지 지웠음. 저장 전에 기존 기억과 발화를 함께 넘겨, ++LLM이 추가·갱신·병합·무효화를 의미로 판단++하게 하고, 규칙은 LLM이 실패할 때의 대체 경로로 남김',
         'LLM 응답 검증: LLM이 돌려준 연산과 대상 기억이 실제로 불러온 기억 안에 있는지 대조해, 환각으로 엉뚱한 기억을 지우는 것을 차단',
-        '사용 여부 관측: 불러온 기억을 실제로 쓴 것과 안 쓴 것으로 나눠 디버그 패널에 표시. 1차는 단어 겹침 규칙, 2차는 LLM 검증으로 판정하고, LLM이 3초 안에 응답하지 않으면 규칙 결과로 대체. 같은 작업에서는 한 번만 기록해 중복 집계를 막음',
+        '사용 여부 관측: ++불러온 기억을 실제로 쓴 것과 안 쓴 것으로 나눠 디버그 패널에 표시++. 1차는 단어 겹침 규칙, 2차는 LLM 검증으로 판정하고, LLM이 3초 안에 응답하지 않으면 규칙 결과로 대체. 같은 작업에서는 한 번만 기록해 중복 집계를 막음',
       ],
     },
   ],
@@ -117,7 +122,7 @@ const memoryResultLines = [
 ];
 
 const iot: Block = {
-  title: 'IoT 실시간 상태 전달: 화면 하나에 무엇을 보여줄지',
+  title: 'IoT 실시간 상태 전달: 화면 1대에 몰리는 이벤트 병목 해결',
   steps: [
     {
       label: '문제',
@@ -133,13 +138,14 @@ const iot: Block = {
       kind: 'solution',
       lines: [
         '이벤트 출발점 이동: 작업 상태를 가장 먼저 아는 AI 서버에서 이벤트를 보내도록 바꿔, 브라우저와 상관없이 동작',
-        '의미 기반 우선순위: 입력 대기(30분 유지) > 완료·실패·취소(3초 강조) > 시작(2초) > 버튼으로 고른 작업(15초) > 그 외 진행 중인 작업. 버튼을 누르면 작업을 차례로 넘겨 봄',
+        '의미 기반 우선순위: ++입력 대기(30분 유지) > 완료·실패·취소(3초 강조) > 시작(2초) > 버튼으로 고른 작업(15초) > 그 외 진행 중인 작업++. 버튼을 누르면 작업을 차례로 넘겨 봄',
         '신호별 전달 보장 차등: 놓치면 안 되는 완료·실패·취소·대기는 MQTT QoS 1, 다음 갱신이 덮는 진행 신호는 QoS 0',
-        '상태 저장과 장애 격리: 표시 우선권은 Redis에 유지 시간과 함께 저장해 만료되면 자동으로 풀림. 화면 표시가 실패해도 AI 작업은 계속 진행',
+        '상태 저장과 장애 격리: 표시 우선권은 Redis에 유지 시간과 함께 저장. 화면 표시가 실패해도 AI 작업은 계속 진행',
       ],
     },
     {
       label: '결과',
+      kind: 'conclusion',
       lines: [
         '작업이 몰려도 화면이 가장 중요한 상태를 중심으로 안정되고, 입력 대기가 묻히는 문제가 사라짐',
         'AI 서버 → Spring → MQTT → ESP32로 이어지는 실시간 상태 표시 파이프라인을 완성해, 브라우저 없이도 작업 상태를 기기에서 확인 가능',
@@ -182,6 +188,9 @@ const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT
         <ul class="chips hg-stack">
           {stack.map((item) => <li>{item}</li>)}
         </ul>
+          <div class="links">
+            <a class="btn" href="https://github.com/theundergroundt/HeyGent/blob/develop/README.md">GitHub README</a>
+          </div>
         </div>
         <figure class="hg-shot">
         <Image src={mainShot} alt="HeyGent 메인 화면: 작업 세션이 건물의 층으로 표시되는 사무실 화면" width={1600} />
@@ -274,7 +283,7 @@ const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT
                         {step.lines.map((line) => (
                           <li>
                             {emphasize(line).map((part) =>
-                              part.red ? <span class="hg-red">{part.text}</span> : part.text,
+                              part.tone ? <span class={`hg-${part.tone}`}>{part.text}</span> : part.text,
                             )}
                           </li>
                         ))}
@@ -438,6 +447,20 @@ const stack = ['FastAPI', 'Spring Boot', 'PostgreSQL (pgvector)', 'Redis', 'MQTT
 
       .hg-red {
         color: #dc2626;
+        font-weight: 600;
+      }
+
+      body.hg .steps li.solution .label {
+        color: #0284c7;
+      }
+
+      .hg-blue {
+        color: #0284c7;
+        font-weight: 600;
+      }
+
+      .hg-green {
+        color: var(--accent);
         font-weight: 600;
       }
 
